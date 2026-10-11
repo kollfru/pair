@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budapest School Párosítós</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Fredoka', 'Baloo 2', sans-serif;
+            background-color: #f0fdf4;
+        }
+        h1, h2, h3, .font-title {
+            font-family: 'Baloo 2', sans-serif;
+        }
+        
+        /* Dashed card borders */
+        .card-task {
+            background-color: #ffffff;
+            border: 4px dashed #3b82f6;
+            border-radius: 1.25rem;
+        }
+        .card-solution {
+            background-color: #f1f5f9;
+            border: 4px dashed #475569;
+            border-radius: 1.25rem;
+        }
+
+        /* Task row soft rainbow styling */
+        .task-row-0 { background-color: #dbeafe; color: #1e40af; border: 1.5px solid #bfdbfe; }
+        .task-row-1 { background-color: #fce7f3; color: #9d174d; border: 1.5px solid #fbcfe8; }
+        .task-row-2 { background-color: #dcfce7; color: #166534; border: 1.5px solid #bbf7d0; }
+        .task-row-3 { background-color: #fef9c3; color: #854d0e; border: 1.5px solid #fef08a; }
+
+        /* Solution row alternating styling */
+        .sol-row-even { background-color: #ffffff; color: #1e293b; border: 1.5px solid #cbd5e1; }
+        .sol-row-odd  { background-color: #cbd5e1; color: #0f172a; border: 1.5px solid #94a3b8; }
+
+        /* Screen Shake Animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Print styling for A4 2x2 cards */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .print-page {
+                page-break-after: always;
+                height: 98vh;
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                grid-template-rows: repeat(2, 1fr) !important;
+                gap: 12px !important;
+                padding: 12px !important;
+                box-sizing: border-box !important;
+            }
+            .card-print {
+                box-shadow: none !important;
+                break-inside: avoid;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Header banner -->
+    <header class="no-print bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white py-6 px-4 shadow-lg mb-8">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">🌟</span>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-wide">Budapest School Párosítós</h1>
+                    <p class="text-blue-100 text-sm md:text-base font-medium">Nyomtatható feladatkártyák és interaktív párosító játék</p>
+                </div>
+            </div>
+            <div class="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl text-xs md:text-sm text-center border border-white/30">
+                ✨ 8 Feladat + 8 Megoldás kártya | Minden kártyapárnak <strong>1 közös eleme</strong> van!
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4">
+        
+        <!-- Controls & Input Section -->
+        <section class="no-print bg-white rounded-3xl p-6 shadow-xl border-2 border-indigo-100 mb-8">
+            
+            <!-- Top Toolbar (As requested: Matekos, Üres, Táblázat beillesztése, Készlet neve, Mentés, Mentett készletek, Törlés) -->
+            <div class="flex flex-wrap items-center gap-3 pb-6 border-b border-gray-100">
+                <button onclick="loadMathPreset()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2.5 rounded-xl shadow transition transform active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid font-bold">🔢</i> Matekos
+                </button>
+                
+                <button onclick="clearAllInputs()" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl shadow transition transform active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-broom"></i> Üres
+                </button>
+                
+                <button onclick="openPasteModal()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 py-2.5 rounded-xl shadow transition transform active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-paste"></i> Táblázat beillesztése
+                </button>
+
+                <div class="h-6 w-px bg-gray-300 hidden md:block"></div>
+
+                <div class="flex items-center gap-2 flex-grow min-w-[200px]">
+                    <input type="text" id="setNameInput" placeholder="Készlet neve..." class="w-full bg-gray-50 border-2 border-indigo-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2 text-sm font-semibold outline-none transition">
+                    <button onclick="saveCurrentSet()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl shadow transition transform active:scale-95 flex items-center gap-1.5 whitespace-nowrap">
+                        <i class="fa-solid fa-floppy-disk"></i> Mentés
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <select id="savedSetsSelect" onchange="loadSelectedSet()" class="bg-gray-50 border-2 border-purple-200 focus:border-purple-500 rounded-xl px-3 py-2 text-sm font-semibold outline-none transition">
+                        <option value="">-- Mentett készletek --</option>
+                    </select>
+                    <button onclick="deleteSelectedSet()" class="bg-rose-500 hover:bg-rose-600 text-white font-bold px-3 py-2.5 rounded-xl shadow transition transform active:scale-95 text-sm" title="Mentett készlet törlése">
+                        <i class="fa-solid fa-trash-can"></i> Törlés
+                    </button>
+                </div>
+            </div>
+
+            <!-- 16 Pairs Input Table -->
+            <div class="mt-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-xl text-sm">16 Feladat & Megoldás</span>
+                        Írd be a párokat!
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-[480px] overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200">
+                    <!-- 16 input rows generated dynamically -->
+                    <div id="inputsContainer" class="contents"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Actions Bar (Below table: Kártyák generálása, Nyomtatás/PDF, Játékindítás) -->
+            <div class="mt-6 pt-6 border-t border-gray-100 flex flex-wrap items-center justify-center sm:justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="generateAndRenderCards()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-lg transition transform active:scale-95 flex items-center gap-2 text-base">
+                        ⚡ Kártyák generálása
+                    </button>
+                    <button onclick="window.print()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold px-5 py-3.5 rounded-2xl shadow transition transform active:scale-95 flex items-center gap-2 text-base">
+                        🖨️ Nyomtatás / PDF mentés
+                    </button>
+                </div>
+
+                <button onclick="startGameMode()" class="bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white font-extrabold px-8 py-3.5 rounded-2xl shadow-xl transition transform hover:scale-105 active:scale-95 flex items-center gap-3 text-lg animate-bounce">
+                    🎮 Játékindítás
+                </button>
+            </div>
+        </section>
+
+        <!-- Cards Container (Rendered Cards for display and print) -->
+        <section id="cardsSection" class="space-y-8">
+            <div id="cardsOutput"></div>
+        </section>
+
+    </main>
+
+    <!-- Table Paste Modal -->
+    <div id="pasteModal" class="no-print fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border-4 border-teal-400">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    📋 Táblázat Beillesztése
+                </h3>
+                <button onclick="closePasteModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <p class="text-gray-600 text-sm mb-3">
+                Másold be a 16 sort Excel-ből, Word-ből vagy Sheets-ből! (Soronként: <code>Feladat [TAB] Megoldás</code>)
+            </p>
+            <textarea id="pasteTextarea" rows="10" placeholder="50% -a: 80	40&#10;25% -a: 120	30&#10;3/4 része: 40	30&#10;..." class="w-full border-2 border-teal-200 rounded-2xl p-3 text-sm font-mono focus:border-teal-500 outline-none mb-4"></textarea>
+            <div class="flex justify-end gap-3">
+                <button onclick="closePasteModal()" class="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-bold text-gray-700">Mégse</button>
+                <button onclick="processPastedTable()" class="px-5 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold shadow">Beillesztés</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Game Modal -->
+    <div id="gameModal" class="no-print fixed inset-0 bg-slate-900/85 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
+        
+        <!-- Game Header / Stats -->
+        <div class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl p-4 max-w-3xl w-full mb-6 text-white flex items-center justify-between shadow-2xl">
+            <div class="flex items-center gap-4">
+                <button onclick="endGame()" class="bg-red-500 hover:bg-red-600 text-white rounded-xl px-3 py-1.5 text-xs font-bold transition">
+                    ❌ Kilépés
+                </button>
+                <div class="text-xl font-bold">
+                    ⏱️ <span id="gameTimer" class="text-amber-300">60</span>s
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <div class="text-center">
+                    <span class="text-xs text-slate-300 block">Pontszám</span>
+                    <span id="gameScore" class="text-2xl font-black text-emerald-400">0</span>
+                </div>
+                <div class="text-center">
+                    <span class="text-xs text-slate-300 block">Kombó</span>
+                    <span id="gameStreak" class="text-2xl font-black text-pink-400">1x</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Card Matching Play Area -->
+        <div id="gamePlayArea" class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <!-- Left Task Card -->
+            <div id="gameTaskCard" class="card-task p-5 shadow-2xl transition transform hover:scale-[1.02]">
+                <!-- Dynamic Content -->
+            </div>
+
+            <!-- Right Solution Card -->
+            <div id="gameSolCard" class="card-solution p-5 shadow-2xl transition transform hover:scale-[1.02]">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+
+        <!-- Game Over Summary Modal -->
+        <div id="gameOverOverlay" class="hidden absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center text-white z-10">
+            <div class="bg-white text-slate-800 p-8 rounded-3xl max-w-md w-full shadow-2xl border-4 border-amber-400 animate-bounce-once">
+                <span class="text-6xl block mb-2">🏆</span>
+                <h3 class="text-3xl font-extrabold text-slate-900 mb-1">Játék Vége!</h3>
+                <p class="text-gray-500 font-semibold mb-6">Remekül teljesítettél!</p>
+                
+                <div class="bg-amber-50 rounded-2xl p-4 mb-6 border border-amber-200">
+                    <div class="text-sm text-amber-800 font-bold mb-1">Végső Pontszám</div>
+                    <div id="finalScore" class="text-4xl font-black text-amber-600">0</div>
+                </div>
+
+                <button onclick="startGameMode()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-2xl shadow-lg hover:from-emerald-600 hover:to-teal-700 text-lg transition">
+                    🔄 ÚjraJáték
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Sample Math Preset Data (16 pairs, fast mental math & sequences)
+        const mathPreset = [
+            { task: "50% -a: 80", sol: "40" },
+            { task: "25% -a: 120", sol: "30" },
+            { task: "3/4 része: 40", sol: "30" },
+            { task: "2/5 része: 50", sol: "20" },
+            { task: "1, 4, 9, 16, ...", sol: "25" },
+            { task: "2, 3, 5, 7, ...", sol: "11" },
+            { task: "2, 4, 8, 16, ...", sol: "32" },
+            { task: "1, 1, 2, 3, 5, ...", sol: "8" },
+            { task: "150 + 270", sol: "420" },
+            { task: "14 × 5", sol: "70" },
+            { task: "180 ÷ 6", sol: "30" },
+            { task: "(12 - 4) × 3", sol: "24" },
+            { task: "√144", sol: "12" },
+            { task: "2⁶", sol: "64" },
+            { task: "XIX", sol: "19" },
+            { task: "2,5 km = ... m", sol: "2500 m" }
+        ];
+
+        // AG(2,4) Affine Plane Parallel Classes Definition (16 points, lines of 4 points)
+        // Task deck uses Class 0 (Verticals) + Class 1 (Horizontals) = 8 lines
+        // Solution deck uses Class 2 + Class 3 = 8 lines
+        // EVERY line in Task Deck intersects EVERY line in Solution Deck at EXACTLY 1 point.
+        const taskCardLines = [
+            [0, 1, 2, 3],      // Task Card 1
+            [4, 5, 6, 7],      // Task Card 2
+            [8, 9, 10, 11],    // Task Card 3
+            [12, 13, 14, 15],  // Task Card 4
+            [0, 4, 8, 12],     // Task Card 5
+            [1, 5, 9, 13],     // Task Card 6
+            [2, 6, 10, 14],    // Task Card 7
+            [3, 7, 11, 15]     // Task Card 8
+        ];
+
+        const solCardLines = [
+            [0, 5, 10, 15],    // Solution Card 1
+            [1, 4, 11, 14],    // Solution Card 2
+            [2, 7, 8, 13],     // Solution Card 3
+            [3, 6, 9, 12],     // Solution Card 4
+            [0, 6, 11, 13],    // Solution Card 5
+            [1, 7, 10, 12],    // Solution Card 6
+            [2, 4, 9, 15],     // Solution Card 7
+            [3, 5, 8, 14]      // Solution Card 8
+        ];
+
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = getAudioContext();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.2);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch (e) {
+                // Audio fallback silence
+            }
+        }
+
+        // Generate 16 input rows
+        function createInputFields() {
+            const container = document.getElementById('inputsContainer');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 16; i++) {
+                const div = document.createElement('div');
+                div.className = 'bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-1.5';
+                div.innerHTML = `
+                    <div class="text-[11px] font-bold text-slate-400 flex justify-between">
+                        <span>#${i + 1} Pár</span>
+                    </div>
+                    <input type="text" id="task_${i}" placeholder="Feladat ${i+1}" class="w-full text-xs font-semibold p-1.5 border border-blue-200 rounded-lg focus:border-blue-500 outline-none bg-blue-50/30">
+                    <input type="text" id="sol_${i}" placeholder="Megoldás ${i+1}" class="w-full text-xs font-semibold p-1.5 border border-slate-300 rounded-lg focus:border-slate-500 outline-none bg-slate-50">
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function loadMathPreset() {
+            mathPreset.forEach((item, index) => {
+                document.getElementById(`task_${index}`).value = item.task;
+                document.getElementById(`sol_${index}`).value = item.sol;
+            });
+            document.getElementById('setNameInput').value = "Matek Alapok";
+            generateAndRenderCards();
+        }
+
+        function clearAllInputs() {
+            for (let i = 0; i < 16; i++) {
+                document.getElementById(`task_${i}`).value = '';
+                document.getElementById(`sol_${i}`).value = '';
+            }
+            document.getElementById('setNameInput').value = '';
+        }
+
+        function openPasteModal() {
+            document.getElementById('pasteModal').classList.remove('hidden');
+        }
+
+        function closePasteModal() {
+            document.getElementById('pasteModal').classList.add('hidden');
+        }
+
+        function processPastedTable() {
+            const text = document.getElementById('pasteTextarea').value.trim();
+            if (!text) return;
+
+            const lines = text.split('\n').filter(l => l.trim().length > 0);
+            for (let i = 0; i < Math.min(16, lines.length); i++) {
+                let parts = lines[i].split('\t');
+                if (parts.length < 2) {
+                    parts = lines[i].split(';');
+                }
+                if (parts.length < 2) {
+                    parts = lines[i].split(',');
+                }
+
+                const taskVal = parts[0] ? parts[0].trim() : '';
+                const solVal = parts[1] ? parts[1].trim() : '';
+
+                document.getElementById(`task_${i}`).value = taskVal;
+                document.getElementById(`sol_${i}`).value = solVal;
+            }
+            closePasteModal();
+            document.getElementById('pasteTextarea').value = '';
+            generateAndRenderCards();
+        }
+
+        function getPairsData() {
+            const pairs = [];
+            for (let i = 0; i < 16; i++) {
+                const t = document.getElementById(`task_${i}`).value.trim() || `Feladat ${i+1}`;
+                const s = document.getElementById(`sol_${i}`).value.trim() || `Megoldás ${i+1}`;
+                pairs.push({ task: t, sol: s });
+            }
+            return pairs;
+        }
+
+        // LocalStorage Set Management
+        function saveCurrentSet() {
+            const name = document.getElementById('setNameInput').value.trim();
+            if (!name) {
+                alert('Kérlek adj meg egy nevet a készletnek!');
+                return;
+            }
+            const pairs = getPairsData();
+            const saved = JSON.parse(localStorage.getItem('bps_card_sets') || '{}');
+            saved[name] = pairs;
+            localStorage.setItem('bps_card_sets', JSON.stringify(saved));
+            updateSavedSetsDropdown();
+            alert(`"${name}" sikeresen elmentve!`);
+        }
+
+        function updateSavedSetsDropdown() {
+            const select = document.getElementById('savedSetsSelect');
+            select.innerHTML = '<option value="">-- Mentett készletek --</option>';
+            const saved = JSON.parse(localStorage.getItem('bps_card_sets') || '{}');
+            Object.keys(saved).forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+        }
+
+        function loadSelectedSet() {
+            const select = document.getElementById('savedSetsSelect');
+            const name = select.value;
+            if (!name) return;
+            const saved = JSON.parse(localStorage.getItem('bps_card_sets') || '{}');
+            if (saved[name]) {
+                saved[name].forEach((item, index) => {
+                    document.getElementById(`task_${index}`).value = item.task;
+                    document.getElementById(`sol_${index}`).value = item.sol;
+                });
+                document.getElementById('setNameInput').value = name;
+                generateAndRenderCards();
+            }
+        }
+
+        function deleteSelectedSet() {
+            const select = document.getElementById('savedSetsSelect');
+            const name = select.value;
+            if (!name) return;
+            if (confirm(`Biztosan törölni szeretnéd a(z) "${name}" készletet?`)) {
+                const saved = JSON.parse(localStorage.getItem('bps_card_sets') || '{}');
+                delete saved[name];
+                localStorage.setItem('bps_card_sets', JSON.stringify(saved));
+                updateSavedSetsDropdown();
+                document.getElementById('setNameInput').value = '';
+            }
+        }
+
+        function generateAndRenderCards() {
+            const pairs = getPairsData();
+            const output = document.getElementById('cardsOutput');
+            output.innerHTML = '';
+
+            // Group cards into pages of 4 cards per page (A4 layout)
+            const allCards = [];
+
+            // 8 Task Cards
+            taskCardLines.forEach((indices, cardIdx) => {
+                allCards.push({
+                    type: 'task',
+                    num: cardIdx + 1,
+                    items: indices.map(idx => pairs[idx].task)
+                });
+            });
+
+            // 8 Solution Cards
+            solCardLines.forEach((indices, cardIdx) => {
+                allCards.push({
+                    type: 'solution',
+                    num: cardIdx + 1,
+                    items: indices.map(idx => pairs[idx].sol)
+                });
+            });
+
+            // Chunk into pages of 4
+            for (let p = 0; p < allCards.length; p += 4) {
+                const pageCards = allCards.slice(p, p + 4);
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'print-page grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 bg-gray-50/50 p-4 rounded-3xl border border-gray-200';
+
+                pageCards.forEach(card => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = `card-print ${card.type === 'task' ? 'card-task' : 'card-solution'} p-5 flex flex-col justify-between shadow-md h-[340px]`;
+
+                    const headerBadge = card.type === 'task'
+                        ? `<div class="flex items-center justify-between mb-3 border-b-2 border-blue-100 pb-2">
+                            <span class="text-xs font-black tracking-widest text-blue-600 uppercase">FELADAT KÁRTYA #${card.num}</span>
+                            <span class="text-lg">📘</span>
+                           </div>`
+                        : `<div class="flex items-center justify-between mb-3 border-b-2 border-slate-300 pb-2">
+                            <span class="text-xs font-black tracking-widest text-slate-700 uppercase">MEGOLDÁS KÁRTYA #${card.num}</span>
+                            <span class="text-lg">📗</span>
+                           </div>`;
+
+                    let rowsHTML = '<div class="space-y-2 flex-grow flex flex-col justify-center">';
+                    card.items.forEach((itemText, rIdx) => {
+                        let rowStyle = '';
+                        if (card.type === 'task') {
+                            rowStyle = `task-row-${rIdx}`;
+                        } else {
+                            rowStyle = rIdx % 2 === 0 ? 'sol-row-even' : 'sol-row-odd';
+                        }
+                        rowsHTML += `
+                            <div class="${rowStyle} rounded-xl px-4 py-3 text-center text-sm font-extrabold shadow-sm flex items-center justify-center min-h-[48px]">
+                                ${itemText}
+                            </div>
+                        `;
+                    });
+                    rowsHTML += '</div>';
+
+                    cardDiv.innerHTML = headerBadge + rowsHTML;
+                    pageDiv.appendChild(cardDiv);
+                });
+
+                output.appendChild(pageDiv);
+            }
+        }
+
+        let gameTimer = null;
+        let timeLeft = 60;
+        let score = 0;
+        let streak = 0;
+        let currentMatchPairIndex = null;
+        let selectedTaskIndex = null;
+
+        function startGameMode() {
+            const modal = document.getElementById('gameModal');
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+            modal.classList.remove('hidden');
+
+            score = 0;
+            streak = 0;
+            timeLeft = 60;
+            updateGameStats();
+
+            if (gameTimer) clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('gameTimer').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            nextRound();
+        }
+
+        function updateGameStats() {
+            document.getElementById('gameScore').textContent = score;
+            document.getElementById('gameStreak').textContent = `${streak + 1}x`;
+            document.getElementById('gameTimer').textContent = timeLeft;
+        }
+
+        function nextRound() {
+            selectedTaskIndex = null;
+            const pairs = getPairsData();
+
+            // Pick 1 random Task Card and 1 random Solution Card
+            const taskCardIdx = Math.floor(Math.random() * 8);
+            const solCardIdx = Math.floor(Math.random() * 8);
+
+            const taskIndices = taskCardLines[taskCardIdx];
+            const solIndices = solCardLines[solCardIdx];
+
+            // Find common pair index
+            currentMatchPairIndex = taskIndices.find(idx => solIndices.includes(idx));
+
+            // Render Task Card
+            const taskCardContainer = document.getElementById('gameTaskCard');
+            let taskRowsHTML = `
+                <div class="flex items-center justify-between mb-4 border-b-2 border-blue-200 pb-2">
+                    <span class="text-sm font-black tracking-widest text-blue-600 uppercase">FELADAT KÁRTYA #${taskCardIdx + 1}</span>
+                    <span class="text-xl">📘</span>
+                </div>
+                <div class="space-y-3">
+            `;
+            taskIndices.forEach((pIdx, rIdx) => {
+                taskRowsHTML += `
+                    <button onclick="handleTaskItemClick(${pIdx}, this)" class="w-full task-row-${rIdx} rounded-2xl p-3.5 text-center text-base font-extrabold shadow transition transform active:scale-95 border-2 hover:brightness-95">
+                        ${pairs[pIdx].task}
+                    </button>
+                `;
+            });
+            taskRowsHTML += '</div>';
+            taskCardContainer.innerHTML = taskRowsHTML;
+
+            // Render Solution Card
+            const solCardContainer = document.getElementById('gameSolCard');
+            let solRowsHTML = `
+                <div class="flex items-center justify-between mb-4 border-b-2 border-slate-300 pb-2">
+                    <span class="text-sm font-black tracking-widest text-slate-700 uppercase">MEGOLDÁS KÁRTYA #${solCardIdx + 1}</span>
+                    <span class="text-xl">📗</span>
+                </div>
+                <div class="space-y-3">
+            `;
+            solIndices.forEach((pIdx, rIdx) => {
+                const rowStyle = rIdx % 2 === 0 ? 'sol-row-even' : 'sol-row-odd';
+                solRowsHTML += `
+                    <button onclick="handleSolItemClick(${pIdx}, this)" class="w-full ${rowStyle} rounded-2xl p-3.5 text-center text-base font-extrabold shadow transition transform active:scale-95 border-2 hover:brightness-95">
+                        ${pairs[pIdx].sol}
+                    </button>
+                `;
+            });
+            solRowsHTML += '</div>';
+            solCardContainer.innerHTML = solRowsHTML;
+        }
+
+        function handleTaskItemClick(pIdx, btnElem) {
+            selectedTaskIndex = pIdx;
+            // Highlight selected task item
+            document.querySelectorAll('#gameTaskCard button').forEach(b => b.classList.remove('ring-4', 'ring-indigo-500'));
+            btnElem.classList.add('ring-4', 'ring-indigo-500');
+
+            if (pIdx === currentMatchPairIndex) {
+                // Also check if clicked directly
+                playSound('correct');
+            }
+        }
+
+        function handleSolItemClick(pIdx, btnElem) {
+            if (pIdx === currentMatchPairIndex) {
+                // Correct match!
+                playSound('correct');
+                score += 100 * (streak + 1);
+                streak++;
+                updateGameStats();
+                nextRound();
+            } else {
+                // Wrong match!
+                playSound('wrong');
+                streak = 0;
+                timeLeft = Math.max(0, timeLeft - 3);
+                updateGameStats();
+
+                // Shake animation penalty
+                const playArea = document.getElementById('gamePlayArea');
+                playArea.classList.add('animate-shake');
+                setTimeout(() => playArea.classList.remove('animate-shake'), 400);
+            }
+        }
+
+        function endGame() {
+            if (gameTimer) clearInterval(gameTimer);
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        }
+
+        // Initialize on Load
+        window.onload = function() {
+            createInputFields();
+            loadMathPreset();
+            updateSavedSetsDropdown();
+        };
+    </script>
+</body>
+</html>
